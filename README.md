@@ -1,85 +1,128 @@
-# Healthcare Threat Detection Tool (HTDT) – Final Submission
+# 🛡️ Healthcare Threat Detection Tool (HTDT)
 
-This repository contains the configuration files and documentation for the **Healthcare Threat Detection Tool (HTDT)** developed as part of the Cyber Security Project at TKH/Coventry University.
+This repository documents the final configuration and setup for my graduation project: **HTDT – Healthcare Threat Detection Tool**. The system simulates a real-world healthcare environment to detect threats targeting medical IoT devices, EHR systems (OpenEMR), and medical imaging servers (DICOM), using Wazuh, Suricata, and the ELK stack.
 
-The HTDT simulates a healthcare infrastructure to detect cyber threats using open-source tools. The system includes real-time monitoring, log analysis, and visualization for EMR systems, IoT devices, and DICOM servers.
+## 📁 Virtual Machines & Setup
 
----
+**Download all VMs from OneDrive:**  
+🔗 [HTDT VMs Folder](https://elsewedyedu1-my.sharepoint.com/:f:/g/personal/me2101233_tkh_edu_eg/EmMPV4s_kfNMjfANZ7tYly4BRvLhsWNZZyonIoeRVfsdvg?e=QAzEoZ)
 
-## 📦 Virtual Machines (Download)
+The setup contains 5 VirtualBox VMs:
 
-All VM files used in this project are hosted on OneDrive:
-
-🔗 [Access VirtualBox VMs Folder](https://elsewedyedu1-my.sharepoint.com/:f:/g/personal/me2101233_tkh_edu_eg/EmMPV4s_kfNMjfANZ7tYly4BRvLhsWNZZyonIoeRVfsdvg?e=PyPU2k)
-
-> 📝 The folder includes 5 VMs used in the setup (OpenEMR, IoT+ELK, Wazuh Manager, Suricata, Attacker - Kali Linux). Each VM is named clearly for identification.
-
----
-
-## 🖥️ System Overview
-
-**Architecture:**
-- Suricata – Network-based IDS (VM5)
-- Wazuh – Host-based monitoring and compliance (VM3 + agents on VM1, VM2)
-- ELK Stack – Data parsing and visualization (VM2)
-- OpenEMR + Orthanc DICOM – Target services (VM1)
-- IoT Device Simulation – Custom traffic (VM2)
-- Kali Linux Attacker – Simulates attacks (VM4)
+| VM | Role | Tools Installed |
+|----|------|------------------|
+| **VM1** | OpenEMR + Orthanc DICOM Server | Wazuh Agent |
+| **VM2** | IoT Devices + ELK Stack | Filebeat, Elasticsearch, Logstash, Kibana |
+| **VM3** | Wazuh Manager | Wazuh Server |
+| **VM4** | Attacker Machine | Kali Linux, Metasploit, Nmap, Hydra |
+| **VM5** | IDS Server | Suricata, Filebeat |
 
 ---
 
-## ⚙️ Key Configuration Files
+## 🏗️ System Architecture
 
-These config files are located within their respective VMs (listed inside each VM folder):
+![HTDT System Architecture](diagram.png)  
+*Architecture shows how VMs interact with IDS, Wazuh, and the ELK stack to detect threats in a healthcare environment.*
 
-### 🛡 Suricata (VM5)
-- `suricata.yaml` – Core ruleset and interface config
-- `eve.json` – Alert output log
-- `filebeat.yml` – Log forwarding to Logstash
+---
 
-### 📄 Wazuh (VM1, VM2, VM3)
-- `ossec.conf` – Agent and Manager configuration
-- Custom rules – Detect brute-force logins, service anomalies
-- Compliance module – HIPAA alerting rules
+## ⚙️ Configuration File Locations
 
-### 📊 ELK Stack (VM2)
-- `logstash.conf` – Input/output pipeline for Suricata & Wazuh logs
-- `grok` filters – Parsing formats for Suricata and Wazuh alerts
-- Kibana Dashboards – Prebuilt visualizations (network threats, endpoint events, GeoIP maps)
+### ✅ VM1 – OpenEMR + Orthanc DICOM
+
+- Wazuh Agent:  
+  `/var/ossec/etc/ossec.conf`
+  
+- Apache Logs (monitored):  
+  `/var/log/apache2/access.log`  
+  `/var/log/apache2/error.log`
+
+---
+
+### ✅ VM2 – IoT Devices + ELK Stack
+
+- Filebeat:  
+  `/etc/filebeat/filebeat.yml`
+
+- Logstash Pipeline:  
+  `/etc/logstash/conf.d/logstash.conf`
+
+- Kibana Dashboards:  
+  Accessible via `http://<vm-ip>:5601`
+
+---
+
+### ✅ VM3 – Wazuh Manager
+
+- Wazuh Config:  
+  `/var/ossec/etc/ossec.conf`
+
+- Custom Rules:  
+  `/var/ossec/etc/rules/local_rules.xml`
+
+- Log Output:  
+  `/var/ossec/logs/ossec.log`
+
+---
+
+### ✅ VM4 – Attacker (Kali Linux)
+
+- Nmap, Hydra, Hping3, Metasploit:  
+  Tools used from native locations:
+  - `/usr/bin/nmap`
+  - `/usr/bin/hydra`
+  - `/usr/sbin/hping3`
+  - `/usr/share/metasploit-framework/`
+
+---
+
+### ✅ VM5 – Suricata IDS
+
+- Suricata Main Config:  
+  `/etc/suricata/suricata.yaml`
+
+- Rule Files:  
+  `/etc/suricata/rules/`
+
+- Log Output:  
+  `/var/log/suricata/eve.json`  
+  `/var/log/suricata/stats.log`
+
+- Filebeat (Forward to ELK):  
+  `/etc/filebeat/filebeat.yml`
 
 ---
 
 ## 🧪 Simulated Attacks
-Executed from Kali (VM4):
-- 🔍 Nmap – Port Scanning
-- 💥 Hping3 – DoS Flooding
-- 🔐 Hydra – Brute-force login
-- 🛠 Metasploit – Payload delivery (tested)
+
+- **DoS attack** using `hping3` on medical IoT devices
+- **Brute-force attack** using `hydra` on OpenEMR login
+- **Port scan** with `nmap` to enumerate services
+- **Metasploit shell** to demonstrate potential exploitation
+
+Each attack was logged, detected, and visualized in real-time through Kibana dashboards and Wazuh alerts.
 
 ---
 
-## 📝 Notes
-- All testing was done in a **closed virtual network** for safety and ethics compliance.
-- No real patient data was used; dummy records were applied in OpenEMR.
-- All machines are configured with **static IPs** and bridged adapters for full visibility.
+## 📊 Visualisation & Alerting
+
+- Real-time dashboard built in **Kibana**
+- Alerts correlated in **Wazuh**
+- Logs stored and searchable via **Elasticsearch**
 
 ---
 
-## 🧠 Instructions
-1. Download the VM files from the OneDrive link above.
-2. Import into **Oracle VirtualBox** using `Machine > Add` or open `.vbox` files.
-3. Start with the Wazuh Manager, then boot all other machines.
-4. Ensure all VMs are on the same bridged adapter network.
-5. Launch Kibana (`http://192.168.1.21:5601`) for dashboards.
-6. Run test attacks from the Kali VM to validate alerting.
+## 📎 Report
+
+Please refer to the full academic report submitted alongside this project for deeper technical explanations, results, and evaluations.
 
 ---
 
-## 📞 Contact
+## 📬 Contact
+
 **Mohamed H. Ezzat**  
-Email: me2101233@tkh.edu.eg  
-Student ID: 202101233  
-Supervisor: Dr. Haitham Ghalwash  
+Cyber Security BSc – Coventry University (TKH)  
+Email: me2101233@tkh.edu.eg
 
 ---
 
